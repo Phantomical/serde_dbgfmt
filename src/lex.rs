@@ -157,6 +157,7 @@ impl<'de> Lexer<'de> {
             Some('\'') => this.parse_char(),
             Some('0'..='9') => this.parse_number(),
             Some(c) if unicode_ident::is_xid_start(c) => this.parse_ident(),
+            Some('.') => this.parse_dotdot(),
             Some('{' | '}' | '[' | ']' | ':' | ',' | '(' | ')' | '+' | '-') => {
                 this.advance(1);
                 Ok(TokenKind::Punct)
@@ -166,55 +167,53 @@ impl<'de> Lexer<'de> {
     }
 
     fn parse_string(&mut self) -> Result<TokenKind, LexerError<'de>> {
-        let mut data = match self.data.strip_prefix("\"") {
+        self.data = match self.data.strip_prefix("\"") {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::String)),
         };
 
-        loop {
-            match data.find('"') {
-                Some(idx) if data.as_bytes().get(idx - 1) == Some(&b'\\') => {
-                    data = &data[idx..];
-                    continue;
-                }
-                Some(idx) => {
-                    data = &data[idx..];
-                    break;
-                }
-                None => return Err(LexerError::unexpected_token(self.data, TokenKind::String)),
+        while let Some(idx) = self.data.find('\"') {
+            self.advance(idx);
+
+            if self.data.as_bytes().get(idx - 1) == Some(&b'\\') {
+                continue;
             }
+
+            break;
         }
 
-        let offset = data.as_ptr() as usize - self.data.as_ptr() as usize;
-        self.advance(offset);
-
-        Ok(TokenKind::String)
+        match self.data.as_bytes().get(0) {
+            Some(b'\"') => {
+                self.advance(1);
+                Ok(TokenKind::String)
+            }
+            _ => Err(LexerError::unexpected_token(self.data, TokenKind::String)),
+        }
     }
 
     fn parse_char(&mut self) -> Result<TokenKind, LexerError<'de>> {
-        let mut data = match self.data.strip_prefix("\'") {
+        self.data = match self.data.strip_prefix("\'") {
             Some(rest) => rest,
-            None => return Err(self.unexpected_token(TokenKind::String)),
+            None => return Err(self.unexpected_token(TokenKind::Char)),
         };
 
-        loop {
-            match data.find('\'') {
-                Some(idx) if data.as_bytes().get(idx - 1) == Some(&b'\\') => {
-                    data = &data[idx..];
-                    continue;
-                }
-                Some(idx) => {
-                    data = &data[idx..];
-                    break;
-                }
-                None => return Err(LexerError::unexpected_token(self.data, TokenKind::Char)),
+        while let Some(idx) = self.data.find('\'') {
+            self.advance(idx);
+
+            if self.data.as_bytes().get(idx - 1) == Some(&b'\\') {
+                continue;
             }
+
+            break;
         }
 
-        let offset = data.as_ptr() as usize - self.data.as_ptr() as usize;
-        self.advance(offset);
-
-        Ok(TokenKind::Char)
+        match self.data.as_bytes().get(0) {
+            Some(b'\'') => {
+                self.advance(1);
+                Ok(TokenKind::Char)
+            }
+            _ => Err(LexerError::unexpected_token(self.data, TokenKind::Char)),
+        }
     }
 
     fn parse_ident(&mut self) -> Result<TokenKind, LexerError<'de>> {
@@ -297,6 +296,12 @@ impl<'de> Lexer<'de> {
         }
 
         Ok(TokenKind::Float)
+    }
+
+    fn parse_dotdot(&mut self) -> Result<TokenKind, LexerError<'de>> {
+        self.parse_once("..", |c| c == '.')?;
+        self.parse_once("..", |c| c == '.')?;
+        Ok(TokenKind::Punct)
     }
 
     fn parse_once<F>(

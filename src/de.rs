@@ -3,6 +3,7 @@ use std::borrow::Cow;
 use serde::de::value::BorrowedStrDeserializer;
 use serde::de::{Error as _, *};
 
+use crate::error::Expected;
 use crate::lex::{Lexer, Token, TokenKind};
 use crate::Error;
 
@@ -74,7 +75,7 @@ impl<'de> DebugDeserializer<'de> {
         // out the indices we need to get the combined span that covers both.
 
         let offset1 = start as usize - *range.start() as usize;
-        let offset2 = end as usize - *range.end() as usize;
+        let offset2 = end as usize - *range.start() as usize;
 
         &self.total[offset1..offset2]
     }
@@ -217,14 +218,33 @@ impl<'de> DebugDeserializer<'de> {
     }
 
     fn parse_punct(&mut self, punct: char) -> Result<(), Error<'de>> {
-        let token = self.lexer.parse_token()?;
-        let value = token.value.chars().next().unwrap();
+        self.parse_punct_ex(punct, |value| {
+            let mut buffer = [0u8; 4];
+            let text = punct.encode_utf8(&mut buffer);
 
-        if value != punct {
-            return Err(Error::unexpected_token(token, punct));
+            value == text
+        })
+        .map(drop)
+    }
+
+    fn parse_punct_ex<F>(
+        &mut self,
+        expected: impl Into<Expected<'de>>,
+        func: F,
+    ) -> Result<&'de str, Error<'de>>
+    where
+        F: FnOnce(&str) -> bool,
+    {
+        let token = self.lexer.parse_token()?;
+        if token.kind != TokenKind::Punct {
+            return Err(Error::unexpected_token(token, expected));
         }
 
-        Ok(())
+        if !func(token.value) {
+            return Err(Error::unexpected_token(token, expected));
+        }
+
+        Ok(token.value)
     }
 
     fn deserialize_struct_dyn<V>(
@@ -322,7 +342,7 @@ macro_rules! deserialize_signed {
             let len = trimmed.len().min(storage.len() - 1);
             storage[1..][..len].copy_from_slice(&trimmed.as_bytes()[..len]);
 
-            let value = unsafe { std::str::from_utf8_unchecked(&storage[..len]) };
+            let value = unsafe { std::str::from_utf8_unchecked(&storage[..len + 1]) };
 
             match <$int>::from_str_radix(value, radix) {
                 Ok(value) => visitor.$visit(value),
@@ -406,7 +426,7 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
     deserialize_unsigned!(deserialize_u16, u16, visit_u16);
     deserialize_unsigned!(deserialize_u32, u32, visit_u32);
     deserialize_unsigned!(deserialize_u64, u64, visit_u64);
-    deserialize_unsigned!(deserialize_u128, i128, visit_i128);
+    deserialize_unsigned!(deserialize_u128, u128, visit_u128);
 
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value, Self::Error>
     where
@@ -570,9 +590,13 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        self.parse_punct('[')?;
+        let open = self.parse_punct_ex("`[` or `{`", |v| matches!(v, "[" | "{"))?;
         let value = visitor.visit_seq(DebugSeqAccess(self))?;
-        self.parse_punct(']')?;
+        self.parse_punct_ex("`]` or `}`", |v| match v {
+            "]" if open == "[" => true,
+            "}" if open == "{" => true,
+            _ => false,
+        })?;
         Ok(value)
     }
 
@@ -659,7 +683,7 @@ impl<'de> SeqAccess<'de> for DebugSeqAccess<'_, 'de> {
     {
         if let Token {
             kind: TokenKind::Punct,
-            value: "]",
+            value: "]" | "}",
         } = self.0.peek()?
         {
             return Ok(None);
@@ -671,7 +695,7 @@ impl<'de> SeqAccess<'de> for DebugSeqAccess<'_, 'de> {
             // instead.
             Token {
                 kind: TokenKind::Punct,
-                value: "]",
+                value: "]" | "}",
             } => (),
             _ => self.0.parse_punct(',')?,
         }
