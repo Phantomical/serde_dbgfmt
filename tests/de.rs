@@ -37,7 +37,7 @@ macro_rules! roundtrip_struct {
             let mut de = serde_defmt::Deserializer::new(&text);
 
             let dst: $name = serde_path_to_error::deserialize(&mut de)
-                .expect("failed to deserialize");
+                .unwrap_or_else(|e| panic!("{}", e));
             de.finish().expect("failed to deserialize");
 
             assert_eq!(src, dst);

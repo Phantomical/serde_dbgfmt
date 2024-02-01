@@ -392,6 +392,7 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
             }
 
             (TokenKind::Punct, "(") => self.deserialize_tuple(0, visitor),
+            // TODO: This could also be a set.
             (TokenKind::Punct, "{") => self.deserialize_map(visitor),
             (TokenKind::Punct, "[") => self.deserialize_seq(visitor),
 
@@ -590,13 +591,21 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let open = self.parse_punct_ex("`[` or `{`", |v| matches!(v, "[" | "{"))?;
-        let value = visitor.visit_seq(DebugSeqAccess(self))?;
-        self.parse_punct_ex("`]` or `}`", |v| match v {
-            "]" if open == "[" => true,
-            "}" if open == "{" => true,
-            _ => false,
-        })?;
+        let value;
+
+        // Both DebugList and DebugSet correspond to a serde sequence.
+        match self.parse_punct_ex("`[` or `{`", |v| matches!(v, "[" | "{"))? {
+            "[" => {
+                value = visitor.visit_seq(DebugSeqAccess(self))?;
+                self.parse_punct(']')?;
+            },
+            "{" => {
+                value = visitor.visit_seq(DebugSeqAccess(self))?;
+                self.parse_punct('}')?;
+            },
+            _ => unreachable!()
+        }
+
         Ok(value)
     }
 
