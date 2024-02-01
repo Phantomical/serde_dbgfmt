@@ -24,7 +24,7 @@ impl<'de> DebugDeserializer<'de> {
     pub fn finish(&mut self) -> Result<(), Error<'de>> {
         let token = self.lexer.parse_token()?;
         if token.kind != TokenKind::Eof {
-            return Err(Error::unexpected_token(token, TokenKind::Eof))
+            return Err(Error::unexpected_token(token, TokenKind::Eof));
         }
 
         Ok(())
@@ -870,7 +870,7 @@ fn unescape<'de>(mut text: &'de str) -> Result<Cow<'de, str>, Error<'de>> {
             r"\'" => ('\'', 2),
             "\\\"" => ('"', 2),
             r"\u" => {
-                let rest = text
+                let rest = &text[2..]
                     .strip_prefix('{')
                     .ok_or_else(|| Error::invalid_string_literal(text, "invalid unicode escape"))?;
 
@@ -917,4 +917,57 @@ fn unescape<'de>(mut text: &'de str) -> Result<Cow<'de, str>, Error<'de>> {
 
     escaped.push_str(text);
     Ok(escaped.into())
+}
+
+#[cfg(test)]
+mod unescape_tests {
+    use super::*;
+
+    macro_rules! unescape_test {
+        {
+            $(
+                $( #[$attr:meta] )*
+                $test:ident: $input:expr $( => $output:expr )? ;
+            )*
+        } => {$(
+            #[test]
+            $( #[$attr] )*
+            #[allow(unused_variables)]
+            fn $test() {
+                let escaped = unescape($input)
+                    .expect("escape sequence was invalid");
+
+                $(
+                    let expected: &str = $output;
+
+                    assert_eq!(&*escaped, expected);
+                )?
+            }
+        )*}
+    }
+
+    unescape_test! {
+        basic: "test" => "test";
+        null: r"\0" => "\0";
+        tab: r"\t" => "\t";
+        crlf: r"\r\n" => "\r\n";
+        backslash: r"\\" => "\\";
+
+        single_quote: r"\'" => "\'";
+        double_quote: r#"\""# => "\"";
+
+        unicode_null: r"\u{0}" => "\u{0}";
+        unicode_max: r"\u{109999}" => "\u{109999}";
+        unicode_hex_uppercase: r"\u{ABCDE}" => "\u{ABCDE}";
+        unicode_hex_lowercase: r"\u{abcde}" => "\u{abcde}";
+
+        #[should_panic]
+        unicode_incomplete: r"\u{123";
+        #[should_panic]
+        invalid_escape: r"\a";
+
+        mixed: r"One, two, three, four!\nI declare a \tab war!\n\\\u{9123}"
+            => "One, two, three, four!\nI declare a \tab war!\n\\\u{9123}";
+        empty: "" => "";
+    }
 }
