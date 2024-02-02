@@ -21,7 +21,7 @@
 //! }
 //!
 //! let text = format!("{:?}", Test { message: "Hello, World!".into() });
-//! let value: Test = serde_defmt::from_str(&text)
+//! let value: Test = serde_dbgfmt::from_str(&text)
 //!     .expect("failed to deserialize from the debug repr");
 //!
 //! assert_eq!(value.message, "Hello, World!");
