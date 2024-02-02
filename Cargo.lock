@@ -52,7 +52,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "serde_defmt"
+name = "serde_dbgfmt"
 version = "0.1.0"
 dependencies = [
  "pretty_assertions",

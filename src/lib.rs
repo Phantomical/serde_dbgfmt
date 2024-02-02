@@ -5,11 +5,10 @@
 //! take a look at [`serde_fmt`](https://docs.rs/serde_fmt).
 //!
 //! # Getting Started
-//!
-//! Add `serde_defmt` to your `Cargo.toml`:
+//! Add `serde_dbgfmt` to your `Cargo.toml`:
 //! ```toml
 //! [dependencies]
-#![doc = concat!("serde_defmt = \"", env!("CARGO_PKG_VERSION"), "\"")]
+#![doc = concat!(env!("CARGO_PKG_NAME"), " = \"", env!("CARGO_PKG_VERSION"), "\"")]
 //! ```
 //!
 //! # Deserializing a struct

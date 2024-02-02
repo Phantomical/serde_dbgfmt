@@ -34,7 +34,7 @@ macro_rules! roundtrip_struct {
             let text = format!("{src:?}");
             eprintln!("{text}");
 
-            let mut de = serde_defmt::Deserializer::new(&text);
+            let mut de = serde_dbgfmt::Deserializer::new(&text);
 
             let dst: $name = serde_path_to_error::deserialize(&mut de)
                 .unwrap_or_else(|e| panic!("{}", e));
@@ -147,7 +147,7 @@ roundtrip_struct! {
 
 #[test]
 fn test_nan() {
-    let nan: f32 = serde_defmt::from_dbg(&f32::NAN).unwrap_or_else(|e| panic!("{}", e));
+    let nan: f32 = serde_dbgfmt::from_dbg(&f32::NAN).unwrap_or_else(|e| panic!("{}", e));
 
     assert!(nan.is_nan());
 }
