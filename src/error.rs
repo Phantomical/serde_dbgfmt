@@ -10,6 +10,7 @@ pub(crate) struct LexerError {
 }
 
 impl LexerError {
+    #[cold]
     pub(crate) fn unexpected_token(found: &str, expected: impl Into<Expected>) -> Self {
         Self {
             found: found.into(),
@@ -17,6 +18,7 @@ impl LexerError {
         }
     }
 
+    #[cold]
     pub(crate) fn unexpected_eof(expected: impl Into<Expected>) -> Self {
         Self {
             found: "".into(),
@@ -69,6 +71,7 @@ pub(crate) use self::detail::Error as ErrorDetail;
 pub struct Error(ErrorDetail);
 
 impl Error {
+    #[cold]
     pub(crate) fn parse_int(value: &str, error: std::num::ParseIntError) -> Self {
         Self(ErrorDetail::ParseInt {
             value: value.into(),
@@ -76,6 +79,7 @@ impl Error {
         })
     }
 
+    #[cold]
     pub(crate) fn parse_float(value: &str, error: std::num::ParseFloatError) -> Self {
         Self(ErrorDetail::ParseFloat {
             value: value.into(),
@@ -83,6 +87,7 @@ impl Error {
         })
     }
 
+    #[cold]
     pub(crate) fn unexpected_token(token: Token, expected: impl Into<Expected>) -> Self {
         Self(ErrorDetail::Lexer(LexerError::unexpected_token(
             token.value,
@@ -90,6 +95,7 @@ impl Error {
         )))
     }
 
+    #[cold]
     pub(crate) fn invalid_string_literal(
         _value: &str,
         message: impl Into<Cow<'static, str>>,
