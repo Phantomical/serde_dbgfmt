@@ -10,7 +10,7 @@
 //! [dependencies]
 #![doc = concat!(env!("CARGO_PKG_NAME"), " = \"", env!("CARGO_PKG_VERSION"), "\"")]
 //! ```
-//!
+//! 
 //! # Deserializing a struct
 //! ```
 //! use serde::Deserialize;
@@ -26,7 +26,7 @@
 //!
 //! assert_eq!(value.message, "Hello, World!");
 //! ```
-//!
+//! 
 //! # Caveats and Limitations
 //! - This library parses the format emitted by the debug helpers in
 //!   [`std::fmt`]. Custom debug representations will not necessarily use these
@@ -50,7 +50,7 @@ mod de;
 mod error;
 mod lex;
 
-pub use crate::de::Deserializer as Deserializer;
+pub use crate::de::Deserializer;
 pub use crate::error::Error;
 
 /// Parse a `T` from the string containing its debug representation.
@@ -65,10 +65,10 @@ where
 }
 
 /// Parse the debug representation of `U` as a `T`.
-pub fn from_dbg<T, U>(value: &U) -> Result<T, Error> 
+pub fn from_dbg<T, U>(value: &U) -> Result<T, Error>
 where
     T: DeserializeOwned,
-    U: Debug
+    U: Debug,
 {
     from_str(&format!("{value:?}"))
 }
