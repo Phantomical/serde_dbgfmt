@@ -2,6 +2,7 @@
 
 [![](https://img.shields.io/crates/v/serde_dngfmt)](https://crates.io/crate/serde_dbgfmt)
 [![](https://img.shields.io/docsrs/v/serde_dbgfmt)](https://docs.rs/serde_dbgfmt)
+[![ci](https://github.com/Phantomical/serde_dbgfmt/actions/workflows/ci.yaml/badge.svg)](https://github.com/Phantomical/serde_dbgfmt/actions/workflows/ci.yaml)
 
 Deserialize the output of `Debug` into any type which implements `Deserialize`.
 
