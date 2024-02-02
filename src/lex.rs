@@ -103,23 +103,17 @@ impl<'de> Lexer<'de> {
         self.data.chars().next()
     }
 
-    fn unexpected_token(&self, expected: impl Into<Expected<'de>>) -> LexerError<'de> {
-        LexerError {
-            found: first_char(self.data),
-            expected: expected.into(),
-        }
+    fn unexpected_token(&self, expected: impl Into<Expected>) -> LexerError {
+        LexerError::unexpected_token(first_char(self.data), expected)
     }
 
-    fn unexpected_eof(&self, expected: impl Into<Expected<'de>>) -> LexerError<'de> {
-        LexerError {
-            found: &self.data[self.data.len()..],
-            expected: expected.into(),
-        }
+    fn unexpected_eof(&self, expected: impl Into<Expected>) -> LexerError {
+        LexerError::unexpected_token(&self.data[self.data.len()..], expected)
     }
 
-    fn try_parse<F, T>(&mut self, func: F) -> Result<T, LexerError<'de>>
+    fn try_parse<F, T>(&mut self, func: F) -> Result<T, LexerError>
     where
-        F: FnOnce(&mut Self) -> Result<T, LexerError<'de>>,
+        F: FnOnce(&mut Self) -> Result<T, LexerError>,
     {
         let mut copy = self.clone();
         let result = func(&mut copy);
@@ -131,9 +125,9 @@ impl<'de> Lexer<'de> {
         result
     }
 
-    fn parse_consumed<F>(&mut self, func: F) -> Result<Token<'de>, LexerError<'de>>
+    fn parse_consumed<F>(&mut self, func: F) -> Result<Token<'de>, LexerError>
     where
-        F: FnOnce(&mut Self) -> Result<TokenKind, LexerError<'de>>,
+        F: FnOnce(&mut Self) -> Result<TokenKind, LexerError>,
     {
         let copy = self.data;
         let kind = self.try_parse(func)?;
@@ -149,7 +143,7 @@ impl<'de> Lexer<'de> {
         })
     }
 
-    pub fn parse_token(&mut self) -> Result<Token<'de>, LexerError<'de>> {
+    pub fn parse_token(&mut self) -> Result<Token<'de>, LexerError> {
         self.skip_whitespace();
         self.parse_consumed(|this| match this.peek_char() {
             None => Ok(TokenKind::Eof),
@@ -166,7 +160,7 @@ impl<'de> Lexer<'de> {
         })
     }
 
-    fn parse_string(&mut self) -> Result<TokenKind, LexerError<'de>> {
+    fn parse_string(&mut self) -> Result<TokenKind, LexerError> {
         self.data = match self.data.strip_prefix("\"") {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::String)),
@@ -191,7 +185,7 @@ impl<'de> Lexer<'de> {
         }
     }
 
-    fn parse_char(&mut self) -> Result<TokenKind, LexerError<'de>> {
+    fn parse_char(&mut self) -> Result<TokenKind, LexerError> {
         self.data = match self.data.strip_prefix("\'") {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::Char)),
@@ -216,7 +210,7 @@ impl<'de> Lexer<'de> {
         }
     }
 
-    fn parse_ident(&mut self) -> Result<TokenKind, LexerError<'de>> {
+    fn parse_ident(&mut self) -> Result<TokenKind, LexerError> {
         match self.data.chars().next() {
             Some(c) if unicode_ident::is_xid_start(c) => (),
             Some(_) => return Err(self.unexpected_token(TokenKind::Ident)),
@@ -237,7 +231,7 @@ impl<'de> Lexer<'de> {
         Ok(TokenKind::Ident)
     }
 
-    fn parse_number(&mut self) -> Result<TokenKind, LexerError<'de>> {
+    fn parse_number(&mut self) -> Result<TokenKind, LexerError> {
         // This token parsing method is somewhat different from the others
         // because can return two different token types depending on what it
         // parses: integers and floating point numbers.
@@ -298,17 +292,13 @@ impl<'de> Lexer<'de> {
         Ok(TokenKind::Float)
     }
 
-    fn parse_dotdot(&mut self) -> Result<TokenKind, LexerError<'de>> {
+    fn parse_dotdot(&mut self) -> Result<TokenKind, LexerError> {
         self.parse_once("..", |c| c == '.')?;
         self.parse_once("..", |c| c == '.')?;
         Ok(TokenKind::Punct)
     }
 
-    fn parse_once<F>(
-        &mut self,
-        expected: impl Into<Expected<'de>>,
-        pred: F,
-    ) -> Result<(), LexerError<'de>>
+    fn parse_once<F>(&mut self, expected: impl Into<Expected>, pred: F) -> Result<(), LexerError>
     where
         F: FnOnce(char) -> bool,
     {

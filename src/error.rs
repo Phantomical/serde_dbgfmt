@@ -4,28 +4,28 @@ use std::fmt;
 use crate::lex::{Token, TokenKind};
 
 #[derive(Clone, Debug)]
-pub(crate) struct LexerError<'de> {
-    pub(crate) found: &'de str,
-    pub(crate) expected: Expected<'de>,
+pub(crate) struct LexerError {
+    pub(crate) found: String,
+    pub(crate) expected: Expected,
 }
 
-impl<'de> LexerError<'de> {
-    pub(crate) fn unexpected_token(found: &'de str, expected: impl Into<Expected<'de>>) -> Self {
+impl LexerError {
+    pub(crate) fn unexpected_token(found: &str, expected: impl Into<Expected>) -> Self {
         Self {
-            found,
+            found: found.into(),
             expected: expected.into(),
         }
     }
 
-    pub(crate) fn unexpected_eof(expected: impl Into<Expected<'de>>) -> Self {
+    pub(crate) fn unexpected_eof(expected: impl Into<Expected>) -> Self {
         Self {
-            found: "",
+            found: "".into(),
             expected: expected.into(),
         }
     }
 }
 
-impl fmt::Display for LexerError<'_> {
+impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.found == "" {
             write!(f, "unexpected end of file, expected {}", self.expected)
@@ -46,15 +46,15 @@ mod detail {
 
     // Needs to be Error so that the debug representation matches the outer name.
     #[derive(Clone, Debug)]
-    pub(crate) enum Error<'de> {
+    pub(crate) enum Error {
         Custom(String),
-        Lexer(LexerError<'de>),
+        Lexer(LexerError),
         ParseInt {
-            value: &'de str,
+            value: String,
             error: std::num::ParseIntError,
         },
         ParseFloat {
-            value: &'de str,
+            value: String,
             error: std::num::ParseFloatError,
         },
         InvalidStringLiteral {
@@ -66,18 +66,24 @@ mod detail {
 pub(crate) use self::detail::Error as ErrorDetail;
 
 #[derive(Clone)]
-pub struct Error<'de>(ErrorDetail<'de>);
+pub struct Error(ErrorDetail);
 
-impl<'de> Error<'de> {
-    pub(crate) fn parse_int(value: &'de str, error: std::num::ParseIntError) -> Self {
-        Self(ErrorDetail::ParseInt { value, error })
+impl Error {
+    pub(crate) fn parse_int(value: &str, error: std::num::ParseIntError) -> Self {
+        Self(ErrorDetail::ParseInt {
+            value: value.into(),
+            error,
+        })
     }
 
-    pub(crate) fn parse_float(value: &'de str, error: std::num::ParseFloatError) -> Self {
-        Self(ErrorDetail::ParseFloat { value, error })
+    pub(crate) fn parse_float(value: &str, error: std::num::ParseFloatError) -> Self {
+        Self(ErrorDetail::ParseFloat {
+            value: value.into(),
+            error,
+        })
     }
 
-    pub(crate) fn unexpected_token(token: Token<'de>, expected: impl Into<Expected<'de>>) -> Self {
+    pub(crate) fn unexpected_token(token: Token, expected: impl Into<Expected>) -> Self {
         Self(ErrorDetail::Lexer(LexerError::unexpected_token(
             token.value,
             expected,
@@ -85,7 +91,7 @@ impl<'de> Error<'de> {
     }
 
     pub(crate) fn invalid_string_literal(
-        _value: &'de str,
+        _value: &str,
         message: impl Into<Cow<'static, str>>,
     ) -> Self {
         Self(ErrorDetail::InvalidStringLiteral {
@@ -94,19 +100,19 @@ impl<'de> Error<'de> {
     }
 }
 
-impl<'de> From<LexerError<'de>> for Error<'de> {
-    fn from(error: LexerError<'de>) -> Self {
+impl<'de> From<LexerError> for Error {
+    fn from(error: LexerError) -> Self {
         Self(ErrorDetail::Lexer(error))
     }
 }
 
-impl<'de> fmt::Debug for Error<'de> {
+impl<'de> fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl<'de> fmt::Display for Error<'de> {
+impl<'de> fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             ErrorDetail::Custom(msg) => f.write_str(msg),
@@ -124,7 +130,7 @@ impl<'de> fmt::Display for Error<'de> {
     }
 }
 
-impl std::error::Error for Error<'_> {
+impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.0 {
             ErrorDetail::ParseInt { error, .. } => Some(error),
@@ -134,7 +140,7 @@ impl std::error::Error for Error<'_> {
     }
 }
 
-impl serde::de::Error for Error<'_> {
+impl serde::de::Error for Error {
     fn custom<T>(msg: T) -> Self
     where
         T: fmt::Display,
@@ -143,32 +149,32 @@ impl serde::de::Error for Error<'_> {
     }
 }
 
-#[derive(Copy, Clone, Debug, Eq, PartialEq)]
-pub(crate) enum Expected<'de> {
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub(crate) enum Expected {
     Token(TokenKind),
     Punct(char),
-    Custom(&'de str),
+    Custom(String),
 }
 
-impl From<TokenKind> for Expected<'_> {
+impl From<TokenKind> for Expected {
     fn from(value: TokenKind) -> Self {
         Self::Token(value)
     }
 }
 
-impl<'de> From<&'de str> for Expected<'de> {
+impl<'de> From<&'de str> for Expected {
     fn from(value: &'de str) -> Self {
-        Self::Custom(value)
+        Self::Custom(value.into())
     }
 }
 
-impl From<char> for Expected<'_> {
+impl From<char> for Expected {
     fn from(value: char) -> Self {
         Self::Punct(value)
     }
 }
 
-impl fmt::Display for Expected<'_> {
+impl fmt::Display for Expected {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Punct(c) => write!(f, "`{c}`"),

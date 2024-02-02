@@ -1,18 +1,20 @@
 use std::borrow::Cow;
 
 use serde::de::value::BorrowedStrDeserializer;
-use serde::de::{Error as _, *};
+use serde::de::{Deserializer as _, Error as _, *};
 
 use crate::error::Expected;
 use crate::lex::{Lexer, Token, TokenKind};
 use crate::Error;
 
-pub struct DebugDeserializer<'de> {
+//// A serde deserializer for rust's debug format.
+pub struct Deserializer<'de> {
     total: &'de str,
     lexer: Lexer<'de>,
 }
 
-impl<'de> DebugDeserializer<'de> {
+impl<'de> Deserializer<'de> {
+    /// Create a deserializer to deserialize from a string.
     pub fn new(data: &'de str) -> Self {
         Self {
             total: data,
@@ -20,9 +22,14 @@ impl<'de> DebugDeserializer<'de> {
         }
     }
 
-    /// Finish deserializing and emit an error if the input data was not fully
-    /// consumed.
-    pub fn finish(&mut self) -> Result<(), Error<'de>> {
+    /// The `end` method should be called after a value has been fully
+    /// deserialized. This allows the deserializer to validate that the input
+    /// stream is at the end or that it only has trailing whitespace.
+    ///
+    /// If you would like to parse multiple objects in a stream then you can do
+    /// that by calling `deserialize` multiple times and then calling `end` at
+    /// the end.
+    pub fn end(&mut self) -> Result<(), Error> {
         let token = self.lexer.parse_token()?;
         if token.kind != TokenKind::Eof {
             return Err(Error::unexpected_token(token, TokenKind::Eof));
@@ -56,7 +63,7 @@ struct Str<'de> {
     value: Cow<'de, str>,
 }
 
-impl<'de> DebugDeserializer<'de> {
+impl<'de> Deserializer<'de> {
     fn join_spans(&self, a: &'de str, b: &'de str) -> &'de str {
         let range = self.total.as_bytes().as_ptr_range();
         let range = range.start..=range.end;
@@ -80,20 +87,20 @@ impl<'de> DebugDeserializer<'de> {
         &self.total[offset1..offset2]
     }
 
-    fn peek(&self) -> Result<Token<'de>, Error<'de>> {
+    fn peek(&self) -> Result<Token<'de>, Error> {
         let mut lexer = self.lexer.clone();
 
         lexer.parse_token().map_err(From::from)
     }
 
-    fn peek2(&self) -> Result<Token<'de>, Error<'de>> {
+    fn peek2(&self) -> Result<Token<'de>, Error> {
         let mut lexer = self.lexer.clone();
 
         lexer.parse_token()?;
         lexer.parse_token().map_err(From::from)
     }
 
-    fn parse_integer(&mut self) -> Result<Integer<'de>, Error<'de>> {
+    fn parse_integer(&mut self) -> Result<Integer<'de>, Error> {
         let mut token = self.lexer.parse_token()?;
         let mut sign = Sign::Positive;
         let mut sign_span = None;
@@ -128,7 +135,7 @@ impl<'de> DebugDeserializer<'de> {
         }
     }
 
-    fn parse_float(&mut self) -> Result<Float<'de>, Error<'de>> {
+    fn parse_float(&mut self) -> Result<Float<'de>, Error> {
         let mut token = self.lexer.parse_token()?;
         let mut sign = Sign::Positive;
         let mut sign_span = None;
@@ -172,7 +179,7 @@ impl<'de> DebugDeserializer<'de> {
         }
     }
 
-    fn parse_ident(&mut self) -> Result<&'de str, Error<'de>> {
+    fn parse_ident(&mut self) -> Result<&'de str, Error> {
         let token = self.lexer.parse_token()?;
 
         match token.kind {
@@ -181,7 +188,7 @@ impl<'de> DebugDeserializer<'de> {
         }
     }
 
-    fn parse_ident_exact(&mut self, expected: &'de str) -> Result<(), Error<'de>> {
+    fn parse_ident_exact(&mut self, expected: &'de str) -> Result<(), Error> {
         let token = self.lexer.parse_token()?;
 
         match token.kind {
@@ -191,7 +198,7 @@ impl<'de> DebugDeserializer<'de> {
         }
     }
 
-    fn parse_string(&mut self) -> Result<Str<'de>, Error<'de>> {
+    fn parse_string(&mut self) -> Result<Str<'de>, Error> {
         let token = self.lexer.parse_token()?;
         if token.kind != TokenKind::String {
             return Err(Error::unexpected_token(token, TokenKind::String));
@@ -204,7 +211,7 @@ impl<'de> DebugDeserializer<'de> {
         })
     }
 
-    fn parse_char(&mut self) -> Result<Str<'de>, Error<'de>> {
+    fn parse_char(&mut self) -> Result<Str<'de>, Error> {
         let token = self.lexer.parse_token()?;
         if token.kind != TokenKind::Char {
             return Err(Error::unexpected_token(token, TokenKind::Char));
@@ -217,7 +224,7 @@ impl<'de> DebugDeserializer<'de> {
         })
     }
 
-    fn parse_punct(&mut self, punct: char) -> Result<(), Error<'de>> {
+    fn parse_punct(&mut self, punct: char) -> Result<(), Error> {
         self.parse_punct_ex(punct, |value| {
             let mut buffer = [0u8; 4];
             let text = punct.encode_utf8(&mut buffer);
@@ -229,9 +236,9 @@ impl<'de> DebugDeserializer<'de> {
 
     fn parse_punct_ex<F>(
         &mut self,
-        expected: impl Into<Expected<'de>>,
+        expected: impl Into<Expected>,
         func: F,
-    ) -> Result<&'de str, Error<'de>>
+    ) -> Result<&'de str, Error>
     where
         F: FnOnce(&str) -> bool,
     {
@@ -247,11 +254,7 @@ impl<'de> DebugDeserializer<'de> {
         Ok(token.value)
     }
 
-    fn deserialize_struct_dyn<V>(
-        &mut self,
-        name: &'de str,
-        visitor: V,
-    ) -> Result<V::Value, Error<'de>>
+    fn deserialize_struct_dyn<V>(&mut self, name: &'de str, visitor: V) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
@@ -267,7 +270,7 @@ impl<'de> DebugDeserializer<'de> {
         name: &'de str,
         len: usize,
         visitor: V,
-    ) -> Result<V::Value, Error<'de>>
+    ) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
@@ -279,7 +282,7 @@ impl<'de> DebugDeserializer<'de> {
         &mut self,
         name: &'de str,
         visitor: V,
-    ) -> Result<V::Value, Error<'de>>
+    ) -> Result<V::Value, Error>
     where
         V: Visitor<'de>,
     {
@@ -352,8 +355,8 @@ macro_rules! deserialize_signed {
     };
 }
 
-impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
-    type Error = Error<'de>;
+impl<'a, 'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
+    type Error = Error;
 
     fn is_human_readable(&self) -> bool {
         true
@@ -598,12 +601,12 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
             "[" => {
                 value = visitor.visit_seq(DebugSeqAccess(self))?;
                 self.parse_punct(']')?;
-            },
+            }
             "{" => {
                 value = visitor.visit_seq(DebugSeqAccess(self))?;
                 self.parse_punct('}')?;
-            },
-            _ => unreachable!()
+            }
+            _ => unreachable!(),
         }
 
         Ok(value)
@@ -681,10 +684,10 @@ impl<'a, 'de> Deserializer<'de> for &'_ mut DebugDeserializer<'de> {
     }
 }
 
-struct DebugSeqAccess<'a, 'de>(&'a mut DebugDeserializer<'de>);
+struct DebugSeqAccess<'a, 'de>(&'a mut Deserializer<'de>);
 
 impl<'de> SeqAccess<'de> for DebugSeqAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
     where
@@ -713,10 +716,10 @@ impl<'de> SeqAccess<'de> for DebugSeqAccess<'_, 'de> {
     }
 }
 
-struct DebugTupleAccess<'a, 'de>(&'a mut DebugDeserializer<'de>);
+struct DebugTupleAccess<'a, 'de>(&'a mut Deserializer<'de>);
 
 impl<'de> SeqAccess<'de> for DebugTupleAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
 
     fn next_element_seed<T>(&mut self, seed: T) -> Result<Option<T::Value>, Self::Error>
     where
@@ -745,10 +748,10 @@ impl<'de> SeqAccess<'de> for DebugTupleAccess<'_, 'de> {
     }
 }
 
-struct DebugMapAccess<'a, 'de>(&'a mut DebugDeserializer<'de>);
+struct DebugMapAccess<'a, 'de>(&'a mut Deserializer<'de>);
 
 impl<'de> MapAccess<'de> for DebugMapAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
@@ -784,20 +787,24 @@ impl<'de> MapAccess<'de> for DebugMapAccess<'_, 'de> {
     }
 }
 
-struct DebugStructAccess<'a, 'de>(&'a mut DebugDeserializer<'de>);
+struct DebugStructAccess<'a, 'de>(&'a mut Deserializer<'de>);
 
 impl<'de> MapAccess<'de> for DebugStructAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
 
     fn next_key_seed<K>(&mut self, seed: K) -> Result<Option<K::Value>, Self::Error>
     where
         K: DeserializeSeed<'de>,
     {
-        match self.0.peek()? {
-            Token {
-                kind: TokenKind::Punct,
-                value: "}",
-            } => return Ok(None),
+        let token = self.0.peek()?;
+        match (token.kind, token.value) {
+            (TokenKind::Punct, "}") => return Ok(None),
+            // This marks the end of a non-exhaustive struct. Example:
+            // Test { a: 4, .. }
+            (TokenKind::Punct, "..") => {
+                self.0.parse_punct_ex("..", |v| v == "..")?;
+                return Ok(None);
+            }
             _ => (),
         }
 
@@ -825,10 +832,10 @@ impl<'de> MapAccess<'de> for DebugStructAccess<'_, 'de> {
     }
 }
 
-struct DebugEnumAccess<'a, 'de>(&'a mut DebugDeserializer<'de>);
+struct DebugEnumAccess<'a, 'de>(&'a mut Deserializer<'de>);
 
 impl<'de> EnumAccess<'de> for DebugEnumAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
     type Variant = Self;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant), Self::Error>
@@ -843,7 +850,7 @@ impl<'de> EnumAccess<'de> for DebugEnumAccess<'_, 'de> {
 }
 
 impl<'de> VariantAccess<'de> for DebugEnumAccess<'_, 'de> {
-    type Error = Error<'de>;
+    type Error = Error;
 
     fn unit_variant(self) -> Result<(), Self::Error> {
         Ok(())
@@ -881,7 +888,7 @@ impl<'de> VariantAccess<'de> for DebugEnumAccess<'_, 'de> {
     }
 }
 
-fn unescape<'de>(mut text: &'de str) -> Result<Cow<'de, str>, Error<'de>> {
+fn unescape<'de>(mut text: &'de str) -> Result<Cow<'de, str>, Error> {
     let mut next = match text.find('\\') {
         Some(pos) => pos,
         None => return Ok(Cow::Borrowed(text)),
