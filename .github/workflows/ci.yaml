@@ -43,6 +43,7 @@ jobs:
           path: clippy.sarif
 
   clippy-upload:
+    if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
     needs: [clippy]
     permissions:
