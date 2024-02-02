@@ -1,5 +1,8 @@
 # serde_defmt
 
+[![](https://img.shields.io/crates/v/serde_defmt)](https://crates.io/crate/serde_defmt)
+[![](https://img.shields.io/docsrs/v/serde_defmt)](https://docs.rs/serde_defmt)
+
 Deserialize the output of `Debug` into any type which implements `Deserialize`.
 
 # Example
