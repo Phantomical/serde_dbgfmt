@@ -100,19 +100,19 @@ impl Error {
     }
 }
 
-impl<'de> From<LexerError> for Error {
+impl From<LexerError> for Error {
     fn from(error: LexerError) -> Self {
         Self(ErrorDetail::Lexer(error))
     }
 }
 
-impl<'de> fmt::Debug for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl<'de> fmt::Display for Error {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             ErrorDetail::Custom(msg) => f.write_str(msg),

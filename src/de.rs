@@ -300,11 +300,11 @@ macro_rules! deserialize_unsigned {
         {
             let int = self.parse_integer()?;
             let result = match int.value.get(..2) {
-                _ if int.sign == Sign::Negative => <$uint>::from_str_radix("-1", 10),
+                _ if int.sign == Sign::Negative => "-1".parse(),
                 Some("0x" | "0X") => <$uint>::from_str_radix(&int.value[2..], 16),
                 Some("0o" | "0O") => <$uint>::from_str_radix(&int.value[2..], 8),
                 Some("0b" | "0B") => <$uint>::from_str_radix(&int.value[2..], 2),
-                _ => <$uint>::from_str_radix(int.value, 10),
+                _ => int.value.parse(),
             };
 
             match result {
@@ -355,7 +355,7 @@ macro_rules! deserialize_signed {
     };
 }
 
-impl<'a, 'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
+impl<'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
     type Error = Error;
 
     fn is_human_readable(&self) -> bool {
@@ -757,12 +757,8 @@ impl<'de> MapAccess<'de> for DebugMapAccess<'_, 'de> {
     where
         K: DeserializeSeed<'de>,
     {
-        match self.0.peek()? {
-            Token {
-                kind: TokenKind::Punct,
-                value: "}",
-            } => return Ok(None),
-            _ => (),
+        if self.0.peek()?.is_punct("}") {
+            return Ok(None);
         }
 
         seed.deserialize(&mut *self.0).map(Some)
