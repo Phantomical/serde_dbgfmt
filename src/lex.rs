@@ -161,7 +161,7 @@ impl<'de> Lexer<'de> {
     }
 
     fn parse_string(&mut self) -> Result<TokenKind, LexerError> {
-        self.data = match self.data.strip_prefix("\"") {
+        self.data = match self.data.strip_prefix('"') {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::String)),
         };
@@ -176,7 +176,7 @@ impl<'de> Lexer<'de> {
             break;
         }
 
-        match self.data.as_bytes().get(0) {
+        match self.data.as_bytes().first() {
             Some(b'\"') => {
                 self.advance(1);
                 Ok(TokenKind::String)
@@ -186,7 +186,7 @@ impl<'de> Lexer<'de> {
     }
 
     fn parse_char(&mut self) -> Result<TokenKind, LexerError> {
-        self.data = match self.data.strip_prefix("\'") {
+        self.data = match self.data.strip_prefix('\'') {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::Char)),
         };
@@ -201,7 +201,7 @@ impl<'de> Lexer<'de> {
             break;
         }
 
-        match self.data.as_bytes().get(0) {
+        match self.data.as_bytes().first() {
             Some(b'\'') => {
                 self.advance(1);
                 Ok(TokenKind::Char)

@@ -7,7 +7,7 @@ use crate::error::Expected;
 use crate::lex::{Lexer, Token, TokenKind};
 use crate::Error;
 
-//// A serde deserializer for rust's debug format.
+/// A serde deserializer for rust's debug format.
 pub struct Deserializer<'de> {
     total: &'de str,
     lexer: Lexer<'de>,
@@ -888,7 +888,7 @@ impl<'de> VariantAccess<'de> for DebugEnumAccess<'_, 'de> {
     }
 }
 
-fn unescape<'de>(mut text: &'de str) -> Result<Cow<'de, str>, Error> {
+fn unescape(mut text: &str) -> Result<Cow<'_, str>, Error> {
     let mut next = match text.find('\\') {
         Some(pos) => pos,
         None => return Ok(Cow::Borrowed(text)),

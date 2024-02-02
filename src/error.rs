@@ -27,7 +27,7 @@ impl LexerError {
 
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.found == "" {
+        if self.found.is_empty() {
             write!(f, "unexpected end of file, expected {}", self.expected)
         } else {
             write!(
