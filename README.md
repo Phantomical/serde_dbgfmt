@@ -4,7 +4,12 @@
 [![](https://img.shields.io/docsrs/v/serde_dbgfmt)](https://docs.rs/serde_dbgfmt)
 [![ci](https://github.com/Phantomical/serde_dbgfmt/actions/workflows/ci.yaml/badge.svg)](https://github.com/Phantomical/serde_dbgfmt/actions/workflows/ci.yaml)
 
-Deserialize the output of `Debug` into any type which implements `Deserialize`.
+Deserialize the output of `#[derive(Debug)]` using `serde`.
+
+This library allows you to deserialize the debug representation of rust types
+via `serde`. This includes all types which use `#[derive(Debug)]` but also any
+other ones that use the debug helpers in `std::fmt` to output their debug
+representation.
 
 # Example
 ```rust
