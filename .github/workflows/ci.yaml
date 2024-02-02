@@ -3,6 +3,8 @@ on:
   push:
   pull_request:
 
+name: ci
+
 jobs:
   test:
     runs-on: ubuntu-latest
