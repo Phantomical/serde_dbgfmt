@@ -2,12 +2,6 @@ use std::fmt;
 
 use crate::error::{Expected, LexerError};
 
-#[derive(Copy, Clone, Debug)]
-pub(crate) struct Token<'de> {
-    pub kind: TokenKind,
-    pub value: &'de str,
-}
-
 #[derive(Copy, Clone, Debug, Eq, PartialEq)]
 pub(crate) enum TokenKind {
     /// An alphanumeric identifier token. It must start with a letter but then
@@ -59,6 +53,18 @@ pub(crate) enum TokenKind {
 
     /// The end-of-file token.
     Eof,
+}
+
+#[derive(Copy, Clone, Debug)]
+pub(crate) struct Token<'de> {
+    pub kind: TokenKind,
+    pub value: &'de str,
+}
+
+impl<'de> Token<'de> {
+    pub fn is_punct(&self, punct: &str) -> bool {
+        self.kind == TokenKind::Punct && self.value == punct
+    }
 }
 
 impl fmt::Display for TokenKind {
@@ -161,7 +167,7 @@ impl<'de> Lexer<'de> {
     }
 
     fn parse_string(&mut self) -> Result<TokenKind, LexerError> {
-        self.data = match self.data.strip_prefix("\"") {
+        self.data = match self.data.strip_prefix('"') {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::String)),
         };
@@ -176,7 +182,7 @@ impl<'de> Lexer<'de> {
             break;
         }
 
-        match self.data.as_bytes().get(0) {
+        match self.data.as_bytes().first() {
             Some(b'\"') => {
                 self.advance(1);
                 Ok(TokenKind::String)
@@ -186,7 +192,7 @@ impl<'de> Lexer<'de> {
     }
 
     fn parse_char(&mut self) -> Result<TokenKind, LexerError> {
-        self.data = match self.data.strip_prefix("\'") {
+        self.data = match self.data.strip_prefix('\'') {
             Some(rest) => rest,
             None => return Err(self.unexpected_token(TokenKind::Char)),
         };
@@ -201,7 +207,7 @@ impl<'de> Lexer<'de> {
             break;
         }
 
-        match self.data.as_bytes().get(0) {
+        match self.data.as_bytes().first() {
             Some(b'\'') => {
                 self.advance(1);
                 Ok(TokenKind::Char)
@@ -221,8 +227,7 @@ impl<'de> Lexer<'de> {
             .data
             .char_indices()
             .skip(1)
-            .skip_while(|&(_, c)| unicode_ident::is_xid_continue(c))
-            .next()
+            .find(|&(_, c)| !unicode_ident::is_xid_continue(c))
             .map(|(idx, _)| idx)
             .unwrap_or(self.data.len());
 
@@ -323,8 +328,7 @@ impl<'de> Lexer<'de> {
         let index = self
             .data
             .char_indices()
-            .skip_while(|&(_, c)| pred(c))
-            .next()
+            .find(|&(_, c)| !pred(c))
             .map(|(idx, _)| idx)
             .unwrap_or(self.data.len());
 

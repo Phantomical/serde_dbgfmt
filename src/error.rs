@@ -10,6 +10,7 @@ pub(crate) struct LexerError {
 }
 
 impl LexerError {
+    #[cold]
     pub(crate) fn unexpected_token(found: &str, expected: impl Into<Expected>) -> Self {
         Self {
             found: found.into(),
@@ -17,6 +18,7 @@ impl LexerError {
         }
     }
 
+    #[cold]
     pub(crate) fn unexpected_eof(expected: impl Into<Expected>) -> Self {
         Self {
             found: "".into(),
@@ -27,7 +29,7 @@ impl LexerError {
 
 impl fmt::Display for LexerError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        if self.found == "" {
+        if self.found.is_empty() {
             write!(f, "unexpected end of file, expected {}", self.expected)
         } else {
             write!(
@@ -69,6 +71,7 @@ pub(crate) use self::detail::Error as ErrorDetail;
 pub struct Error(ErrorDetail);
 
 impl Error {
+    #[cold]
     pub(crate) fn parse_int(value: &str, error: std::num::ParseIntError) -> Self {
         Self(ErrorDetail::ParseInt {
             value: value.into(),
@@ -76,6 +79,7 @@ impl Error {
         })
     }
 
+    #[cold]
     pub(crate) fn parse_float(value: &str, error: std::num::ParseFloatError) -> Self {
         Self(ErrorDetail::ParseFloat {
             value: value.into(),
@@ -83,6 +87,7 @@ impl Error {
         })
     }
 
+    #[cold]
     pub(crate) fn unexpected_token(token: Token, expected: impl Into<Expected>) -> Self {
         Self(ErrorDetail::Lexer(LexerError::unexpected_token(
             token.value,
@@ -90,6 +95,7 @@ impl Error {
         )))
     }
 
+    #[cold]
     pub(crate) fn invalid_string_literal(
         _value: &str,
         message: impl Into<Cow<'static, str>>,
@@ -100,19 +106,19 @@ impl Error {
     }
 }
 
-impl<'de> From<LexerError> for Error {
+impl From<LexerError> for Error {
     fn from(error: LexerError) -> Self {
         Self(ErrorDetail::Lexer(error))
     }
 }
 
-impl<'de> fmt::Debug for Error {
+impl fmt::Debug for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         self.0.fmt(f)
     }
 }
 
-impl<'de> fmt::Display for Error {
+impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match &self.0 {
             ErrorDetail::Custom(msg) => f.write_str(msg),
