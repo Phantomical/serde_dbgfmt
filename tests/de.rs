@@ -144,3 +144,10 @@ roundtrip_struct! {
         }
     }
 }
+
+#[test]
+fn test_nan() {
+    let nan: f32 = serde_defmt::from_dbg(&f32::NAN).unwrap_or_else(|e| panic!("{}", e));
+
+    assert!(nan.is_nan());
+}
