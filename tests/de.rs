@@ -49,7 +49,7 @@ macro_rules! roundtrip_struct {
 enum MyEnum {
     First,
     Second(u32),
-    Third{ key: String, value: Option<bool> },
+    Third { key: String, value: Option<bool> },
 }
 
 roundtrip_struct! {
