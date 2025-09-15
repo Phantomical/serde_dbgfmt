@@ -543,9 +543,9 @@ impl<'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
 
         match ident {
             "Some" => {
-                self.parse_punct('{')?;
+                self.parse_punct('(')?;
                 let value = visitor.visit_some(&mut *self)?;
-                self.parse_punct('}')?;
+                self.parse_punct(')')?;
                 Ok(value)
             }
             "None" => visitor.visit_none(),

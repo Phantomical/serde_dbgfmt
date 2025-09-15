@@ -45,6 +45,13 @@ macro_rules! roundtrip_struct {
     )*}
 }
 
+#[derive(Debug, Eq, PartialEq, Deserialize)]
+enum MyEnum {
+    First,
+    Second(u32),
+    Third{ key: String, value: Option<bool> },
+}
+
 roundtrip_struct! {
     test_basic_struct {
         struct Test {
@@ -102,6 +109,24 @@ roundtrip_struct! {
         struct Floats {
             one: f64 = 1.0,
             negative: f64 = -1.0,
+        }
+    }
+
+
+    test_option {
+        struct Options {
+            none: Option<u32> = None,
+            some: Option<u32> = Some(3),
+            some_string: Option<String> = Some("hello".into()),
+        }
+    }
+
+    test_enum {
+        struct Enumed {
+            e1: MyEnum = MyEnum::First,
+            e2: MyEnum = MyEnum::Second(2),
+            e3: MyEnum = MyEnum::Third{ key: "hello".into(), value: Some(false) },
+            e4: Option<MyEnum> = Some(MyEnum::Third{ key: "hello".into(), value: Some(false) }),
         }
     }
 
