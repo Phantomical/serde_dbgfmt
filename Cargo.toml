@@ -1,8 +1,9 @@
 [package]
 name = "serde_dbgfmt"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 license = "MIT OR Apache-2.0"
+authors = ["Sean Lynch <sean@lynches.ca>"]
 
 readme = "README.md"
 repository = "https://github.com/phantomical/serde_dbgfmt"
