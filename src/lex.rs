@@ -101,7 +101,7 @@ impl<'de> Lexer<'de> {
 
     fn take_char(&mut self) -> Option<char> {
         let (index, c) = self.data.char_indices().next()?;
-        self.advance(index);
+        self.advance(index + c.len_utf8());
         Some(c)
     }
 
@@ -172,10 +172,16 @@ impl<'de> Lexer<'de> {
             None => return Err(self.unexpected_token(TokenKind::String)),
         };
 
-        while let Some(idx) = self.data.find('\"') {
+        while let Some(idx) = self.data.find(['\"', '\\']) {
+            let byte = self.data.as_bytes()[idx];
             self.advance(idx);
 
-            if self.data.as_bytes().get(idx - 1) == Some(&b'\\') {
+            if byte == b'\\' {
+                if self.data.len() < 2 {
+                    return Err(self.unexpected_eof("a string literal"));
+                }
+
+                self.advance(2);
                 continue;
             }
 
@@ -197,10 +203,16 @@ impl<'de> Lexer<'de> {
             None => return Err(self.unexpected_token(TokenKind::Char)),
         };
 
-        while let Some(idx) = self.data.find('\'') {
+        while let Some(idx) = self.data.find(['\'', '\\']) {
+            let byte = self.data.as_bytes()[idx];
             self.advance(idx);
 
-            if self.data.as_bytes().get(idx - 1) == Some(&b'\\') {
+            if byte == b'\\' {
+                if self.data.len() < 2 {
+                    return Err(self.unexpected_eof("a character literal"));
+                }
+
+                self.advance(2);
                 continue;
             }
 

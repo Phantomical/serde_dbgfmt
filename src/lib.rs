@@ -50,6 +50,9 @@ mod de;
 mod error;
 mod lex;
 
+#[cfg(test)]
+mod tests;
+
 pub use crate::de::Deserializer;
 pub use crate::error::Error;
 
