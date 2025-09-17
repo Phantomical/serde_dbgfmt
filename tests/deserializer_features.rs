@@ -65,7 +65,7 @@ fn test_mixed_type_sequential_deserialization() {
 
     let flag: bool = bool::deserialize(&mut deserializer)
         .expect("Failed to deserialize bool");
-    assert_eq!(flag, true);
+    assert!(flag);
 
     let list: Vec<i32> = Vec::<i32>::deserialize(&mut deserializer)
         .expect("Failed to deserialize vector");
