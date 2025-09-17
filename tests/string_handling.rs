@@ -264,7 +264,10 @@ fn test_complex_string_combinations() {
     let result: Result<ComplexStrs, _> = serde_dbgfmt::from_str(input);
     assert_matches!(result, Ok(_));
     let parsed = result.unwrap();
-    assert_eq!(parsed.mixed, "Hello\tWorld!\nNext line with \"quotes\" and \\backslashes\\");
+    assert_eq!(
+        parsed.mixed,
+        "Hello\tWorld!\nNext line with \"quotes\" and \\backslashes\\"
+    );
     assert_eq!(parsed.path_like, "/usr/bin/env");
     assert_eq!(parsed.json_like, r#"{"key": "value"}"#);
     assert_eq!(parsed.regex_like, r"\d+\.\d+");
@@ -305,7 +308,10 @@ fn test_string_length_variations() {
     let parsed = result.unwrap();
     assert_eq!(parsed.single, "A");
     assert_eq!(parsed.short, "Hello");
-    assert_eq!(parsed.medium, "This is a medium length string for testing purposes");
+    assert_eq!(
+        parsed.medium,
+        "This is a medium length string for testing purposes"
+    );
 }
 
 #[test]

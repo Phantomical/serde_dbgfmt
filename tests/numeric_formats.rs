@@ -234,7 +234,8 @@ fn test_scientific_with_signs() {
         neg_num: f64,
     }
 
-    let input = "SciSigns { pos_exp: 1.5e+10, neg_exp: 2.5e-5, pos_num: +3.14e5, neg_num: -2.71e3 }";
+    let input =
+        "SciSigns { pos_exp: 1.5e+10, neg_exp: 2.5e-5, pos_num: +3.14e5, neg_num: -2.71e3 }";
     let result: Result<SciSigns, _> = serde_dbgfmt::from_str(input);
     assert_matches!(result, Ok(_));
     let parsed = result.unwrap();
@@ -294,7 +295,8 @@ fn test_large_hex_numbers() {
         val128: u128,
     }
 
-    let input = "LargeHex { val64: 0xffffffffffffffff, val128: 0xffffffffffffffffffffffffffffffff }";
+    let input =
+        "LargeHex { val64: 0xffffffffffffffff, val128: 0xffffffffffffffffffffffffffffffff }";
     let result: Result<LargeHex, _> = serde_dbgfmt::from_str(input);
     assert_matches!(result, Ok(_));
     let parsed = result.unwrap();

@@ -468,8 +468,8 @@ fn test_roundtrip_multiple_empty_collections() {
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: MultipleEmpty = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: MultipleEmpty =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);
@@ -494,7 +494,7 @@ fn test_roundtrip_collections_in_tuples() {
                 let mut set = BTreeSet::new();
                 set.insert("item".to_string());
                 set
-            }
+            },
         ),
     };
 
@@ -502,8 +502,8 @@ fn test_roundtrip_collections_in_tuples() {
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: CollectionsInTuples = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: CollectionsInTuples =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);

@@ -155,7 +155,7 @@ roundtrip_enum! {
 enum InnerEnum {
     A,
     B(u32),
-    C { value: String }
+    C { value: String },
 }
 
 roundtrip_enum! {
@@ -230,7 +230,8 @@ roundtrip_enum! {
     }
 }
 
-// Option-like and Result-like enums (concrete types since we don't support generics in the macro)
+// Option-like and Result-like enums (concrete types since we don't support
+// generics in the macro)
 roundtrip_enum! {
     test_option_like_enum {
         enum StringOptionLike {

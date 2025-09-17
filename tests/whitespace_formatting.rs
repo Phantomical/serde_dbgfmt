@@ -271,7 +271,13 @@ fn test_option_whitespace_patterns() {
     // Nested Some with complex whitespace
     let input = r#"Some(  SimpleStruct  {  a:  42,  b:  "test"  }  )"#;
     let result: Option<SimpleStruct> = from_str(input).unwrap();
-    assert_eq!(result, Some(SimpleStruct { a: 42, b: "test".to_string() }));
+    assert_eq!(
+        result,
+        Some(SimpleStruct {
+            a: 42,
+            b: "test".to_string()
+        })
+    );
 }
 
 #[test]
@@ -451,17 +457,17 @@ fn test_extreme_whitespace_patterns() {
     // Very large amounts of whitespace
     let input = format!(
         "{}SimpleStruct{}{{{}a{}:{}42{},{}b{}:{}\"hello\"{}}}{}",
-        " ".repeat(100),  // leading
-        " ".repeat(50),   // after struct name
-        " ".repeat(30),   // after opening brace
-        " ".repeat(20),   // after field name
-        " ".repeat(15),   // after colon
-        " ".repeat(25),   // after value
-        " ".repeat(10),   // after comma
-        " ".repeat(20),   // after field name
-        " ".repeat(15),   // after colon
-        " ".repeat(35),   // after value
-        " ".repeat(40),   // before closing brace
+        " ".repeat(100), // leading
+        " ".repeat(50),  // after struct name
+        " ".repeat(30),  // after opening brace
+        " ".repeat(20),  // after field name
+        " ".repeat(15),  // after colon
+        " ".repeat(25),  // after value
+        " ".repeat(10),  // after comma
+        " ".repeat(20),  // after field name
+        " ".repeat(15),  // after colon
+        " ".repeat(35),  // after value
+        " ".repeat(40),  // before closing brace
     );
     let result: SimpleStruct = from_str(&input).unwrap();
     assert_eq!(result.a, 42);

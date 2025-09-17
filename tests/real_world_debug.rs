@@ -101,7 +101,10 @@ test_roundtrip!(
     ConfigData {
         settings: {
             let mut map = BTreeMap::new();
-            map.insert("database_url".to_string(), "postgresql://localhost:5432/mydb".to_string());
+            map.insert(
+                "database_url".to_string(),
+                "postgresql://localhost:5432/mydb".to_string(),
+            );
             map.insert("log_level".to_string(), "info".to_string());
             map.insert("max_connections".to_string(), "100".to_string());
             map.insert("enable_ssl".to_string(), "true".to_string());
@@ -147,8 +150,14 @@ test_roundtrip!(
         status: Status::Active,
         metadata: {
             let mut map = BTreeMap::new();
-            map.insert("roles".to_string(), vec!["admin".to_string(), "moderator".to_string()]);
-            map.insert("groups".to_string(), vec!["developers".to_string(), "beta-testers".to_string()]);
+            map.insert(
+                "roles".to_string(),
+                vec!["admin".to_string(), "moderator".to_string()],
+            );
+            map.insert(
+                "groups".to_string(),
+                vec!["developers".to_string(), "beta-testers".to_string()],
+            );
             map
         },
         scores: Some(vec![95.5, 87.2, 99.1, 78.8]),
@@ -161,7 +170,9 @@ test_roundtrip!(
     UserAccount {
         id: 67890,
         username: "temp_user".to_string(),
-        status: Status::Inactive { reason: "Account suspended for policy violation".to_string() },
+        status: Status::Inactive {
+            reason: "Account suspended for policy violation".to_string()
+        },
         metadata: BTreeMap::new(),
         scores: None,
     },
@@ -173,10 +184,16 @@ test_roundtrip!(
     UserAccount {
         id: 11111,
         username: "new_user_2024".to_string(),
-        status: Status::Pending { since: 1704067200, priority: 5 },
+        status: Status::Pending {
+            since: 1704067200,
+            priority: 5
+        },
         metadata: {
             let mut map = BTreeMap::new();
-            map.insert("preferences".to_string(), vec!["dark-mode".to_string(), "notifications-off".to_string()]);
+            map.insert(
+                "preferences".to_string(),
+                vec!["dark-mode".to_string(), "notifications-off".to_string()],
+            );
             map
         },
         scores: Some(vec![]),
@@ -519,16 +536,12 @@ test_roundtrip!(
         coordinates: (12.345, -67.890, 100.0),
         name_score: ("Alice".to_string(), 9500),
         flags: (true, false, true, false),
-        nested: Some((
-            "nested_data".to_string(),
-            vec![1, 2, 3, 4, 5],
-            {
-                let mut map = BTreeMap::new();
-                map.insert("feature_a".to_string(), true);
-                map.insert("feature_b".to_string(), false);
-                map
-            }
-        )),
+        nested: Some(("nested_data".to_string(), vec![1, 2, 3, 4, 5], {
+            let mut map = BTreeMap::new();
+            map.insert("feature_a".to_string(), true);
+            map.insert("feature_b".to_string(), false);
+            map
+        })),
     },
     ComplexTuples
 );
@@ -823,7 +836,8 @@ fn test_real_world_collections() {
     assert_eq!(metrics, parsed);
 }
 
-/// Test that shows how the library handles actual enum variants used in applications
+/// Test that shows how the library handles actual enum variants used in
+/// applications
 #[test]
 fn test_real_world_enum_variants() {
     #[derive(Debug, Deserialize, PartialEq)]

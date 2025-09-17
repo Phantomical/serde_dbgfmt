@@ -1,7 +1,7 @@
 //! Comprehensive round-trip tests for serde_dbgfmt
 //!
-//! This test suite covers complex nested structures, large data sets, and stress tests
-//! to ensure the deserializer can handle:
+//! This test suite covers complex nested structures, large data sets, and
+//! stress tests to ensure the deserializer can handle:
 //! - Deep nesting of various types (structs, enums, collections)
 //! - Large collections (performance and memory stress tests)
 //! - Type-specific edge cases (primitive boundary values)
@@ -554,8 +554,8 @@ fn test_performance_large_map() {
     eprintln!("Large map debug length: {}", text.len());
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let deserialized: BTreeMap<String, u32> = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let deserialized: BTreeMap<String, u32> =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(large_map, deserialized);
@@ -582,8 +582,8 @@ fn test_empty_collections() {
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: EmptyCollections = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: EmptyCollections =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);
@@ -612,8 +612,8 @@ fn test_normal_float_values() {
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: NormalFloats = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: NormalFloats =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);
@@ -628,15 +628,15 @@ fn test_complex_tuple_struct() {
         42,
         "tuple test".to_string(),
         vec![true, false, true, false],
-        Some(3.14159)
+        Some(3.14159),
     );
 
     let text = format!("{src:?}");
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: TupleStruct = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: TupleStruct =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);
@@ -657,12 +657,22 @@ fn test_nested_enum_stress() {
         let mut map = BTreeMap::new();
         map.insert("simple".to_string(), NestedEnum::Simple);
         map.insert("data".to_string(), NestedEnum::WithData(100));
-        map.insert("struct".to_string(), NestedEnum::WithStruct { field: "test".to_string() });
-        map.insert("vec".to_string(), NestedEnum::WithVec(vec![
-            NestedEnum::Simple,
-            NestedEnum::WithData(200),
-            NestedEnum::WithStruct { field: "nested".to_string() }
-        ]));
+        map.insert(
+            "struct".to_string(),
+            NestedEnum::WithStruct {
+                field: "test".to_string(),
+            },
+        );
+        map.insert(
+            "vec".to_string(),
+            NestedEnum::WithVec(vec![
+                NestedEnum::Simple,
+                NestedEnum::WithData(200),
+                NestedEnum::WithStruct {
+                    field: "nested".to_string(),
+                },
+            ]),
+        );
         map
     });
 
@@ -670,8 +680,8 @@ fn test_nested_enum_stress() {
     eprintln!("{text}");
 
     let mut de = serde_dbgfmt::Deserializer::new(&text);
-    let dst: NestedEnum = serde_path_to_error::deserialize(&mut de)
-        .unwrap_or_else(|e| panic!("{}", e));
+    let dst: NestedEnum =
+        serde_path_to_error::deserialize(&mut de).unwrap_or_else(|e| panic!("{}", e));
     de.end().expect("failed to deserialize");
 
     assert_eq!(src, dst);
