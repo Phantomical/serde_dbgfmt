@@ -45,7 +45,7 @@ macro_rules! declare_lexer_tests
     )*}
 }
 
-fn lex_all(input: &str) -> Result<Vec<Token>, LexerError> {
+fn lex_all(input: &str) -> Result<Vec<Token<'_>>, LexerError> {
     let mut lexer = Lexer::new(input);
     let mut tokens = Vec::new();
 
@@ -333,7 +333,7 @@ mod lexer {
         assert_eq!(tokens[1].kind, TokenKind::Eof);
     }
 
-    fn lex_all(input: &str) -> Result<Vec<Token>, LexerError> {
+    fn lex_all(input: &str) -> Result<Vec<Token<'_>>, LexerError> {
         let mut lexer = Lexer::new(input);
         let mut tokens = Vec::new();
 
