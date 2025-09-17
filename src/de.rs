@@ -55,7 +55,13 @@ struct Float<'de> {
     sign: Sign,
     value: &'de str,
     span: &'de str,
-    kind: TokenKind,
+    kind: FloatKind,
+}
+
+enum FloatKind {
+    Normal,
+    Nan,
+    Inf,
 }
 
 struct Str<'de> {
@@ -167,13 +173,19 @@ impl<'de> Deserializer<'de> {
                 sign,
                 value: token.value,
                 span,
-                kind: token.kind,
+                kind: FloatKind::Normal,
             }),
             TokenKind::Ident if token.value.eq_ignore_ascii_case("NaN") => Ok(Float {
                 sign,
                 value: token.value,
                 span,
-                kind: token.kind,
+                kind: FloatKind::Nan,
+            }),
+            TokenKind::Ident if token.value.eq_ignore_ascii_case("inf") => Ok(Float {
+                sign,
+                value: token.value,
+                span,
+                kind: FloatKind::Inf,
             }),
             _ => Err(Error::unexpected_token(token, TokenKind::Float)),
         }
@@ -329,14 +341,14 @@ macro_rules! deserialize_signed {
                 _ => (int.value, 10),
             };
 
-            let trimmed = match rest.trim_matches('0') {
+            let trimmed = match rest.trim_start_matches('0') {
                 "" => "0",
                 trimmed => trimmed,
             };
 
             // Copy the string to a temporary buffer so that we get the proper error type
             // when parsing overlarge signed integers.
-            let mut storage = [0xFF; <$int>::MAX.ilog10() as usize + 2];
+            let mut storage = [0xFF; <$int>::BITS as usize + 2];
             storage[0] = match int.sign {
                 Sign::Positive => b'+',
                 Sign::Negative => b'-',
@@ -438,12 +450,12 @@ impl<'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
     {
         let float = self.parse_float()?;
         let value = match float.kind {
-            TokenKind::Ident => f32::NAN,
-            TokenKind::Float => float
+            FloatKind::Nan => f32::NAN,
+            FloatKind::Inf => f32::INFINITY,
+            FloatKind::Normal => float
                 .value
                 .parse()
                 .map_err(|e| Error::parse_float(float.span, e))?,
-            _ => unreachable!(),
         };
 
         let value = match float.sign {
@@ -460,12 +472,12 @@ impl<'de> serde::de::Deserializer<'de> for &'_ mut Deserializer<'de> {
     {
         let float = self.parse_float()?;
         let value = match float.kind {
-            TokenKind::Ident => f64::NAN,
-            TokenKind::Float => float
+            FloatKind::Nan => f64::NAN,
+            FloatKind::Inf => f64::INFINITY,
+            FloatKind::Normal => float
                 .value
                 .parse()
                 .map_err(|e| Error::parse_float(float.span, e))?,
-            _ => unreachable!(),
         };
 
         let value = match float.sign {
